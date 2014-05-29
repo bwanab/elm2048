@@ -17,16 +17,30 @@ sq : Float -> Form
 sq n = let clr = rgb 200 200 80
        in filled clr (rect n n)
 
+sqArray : Float -> [Form]
+sqArray n = let
+                l = n / 2
+                l2 = n + l
+                s = [(-l2, l2), (-l, l2), (l, l2), (l2, l2),
+                     (-l2, l), (-l, l), (l, l), (l2, l),
+                     (-l2, -l), (-l, -l), (l, -l), (l2, -l),
+                     (-l2, -l2), (-l, -l2), (l, -l2), (l2, -l2)
+                    ]
+            in
+                map (\x -> move x (filled red (square (n - 10)))) s
+
 grid : Float -> Element
 grid n =
      let
          l = n / 2
          c = round n
+         s = l / 2
      in
          collage c c
-         [ sq n ,
+         ([ sq n ,
            lines l ,
            gridLines l
-         ]
 
-main = grid 800
+          ] ++ (sqArray s))
+
+main = grid 400
