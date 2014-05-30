@@ -1,7 +1,15 @@
 import Tiles
+import Dict
+
+tc = [(Tiles.empty, darkGrey), (Tiles.t2,lightGrey), (Tiles.t4, grey),
+      (Tiles.t8, lightYellow), (Tiles.t16, darkYellow), (Tiles.t32, lightOrange),
+      (Tiles.t64, orange), (Tiles.t128, darkOrange), (Tiles.t256, lightRed),
+      (Tiles.t512, red), (Tiles.t1024, darkRed), (Tiles.t2048, green)]
+
+tileColor = Dict.fromList tc
 
 sq : Float -> Form
-sq n = let clr = rgb 200 200 80
+sq n = let clr = charcoal
        in filled clr (rect n n)
 
 permutations : [a] -> [b] -> [(a,b)]
@@ -16,7 +24,7 @@ locations n = let
                 permutations (reverse s) s
 
 sqArray : [(Float,Float)] -> Float -> [Form]
-sqArray s size = map (\x -> move x (filled red (square size))) s
+sqArray s size = map (\x -> move x (filled darkGrey (square size))) s
 
 grid : Float -> Element
 grid n =
