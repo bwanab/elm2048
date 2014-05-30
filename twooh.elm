@@ -1,33 +1,22 @@
--- build tiles
-
--- redSquare : Float -> Form
--- redSquare n = traced (solid red) (lines n)
-
-lines : Float -> Form
-lines n = traced (solid red) (path [ (n,n), (n,-n), (-n,-n), (-n,n), (n,n) ])
-
-gridLines : Float -> Form
-gridLines n =
-          let
-              l = n / 2
-          in
-              traced (solid blue) (path [ (-n,-l), (n, -l), (n,0), (-n, 0), (-n,l), (n,l), (n, n), (l,n), (l,-n), (0,-n), (0,n), (-l,n), (-l,-n) ])
+import Tiles
 
 sq : Float -> Form
 sq n = let clr = rgb 200 200 80
        in filled clr (rect n n)
 
-sqArray : Float -> [Form]
-sqArray n = let
+permutations : [a] -> [b] -> [(a,b)]
+permutations xs ys =  concat (map (\y -> (map (\x -> (x, y)) xs)) ys)
+
+locations : Float -> [(Float, Float)]
+locations n = let
                 l = n / 2
                 l2 = n + l
-                s = [(-l2, l2), (-l, l2), (l, l2), (l2, l2),
-                     (-l2, l), (-l, l), (l, l), (l2, l),
-                     (-l2, -l), (-l, -l), (l, -l), (l2, -l),
-                     (-l2, -l2), (-l, -l2), (l, -l2), (l2, -l2)
-                    ]
+                s = [-l2, -l, l, l2]
             in
-                map (\x -> move x (filled red (square (n - 10)))) s
+                permutations (reverse s) s
+
+sqArray : [(Float,Float)] -> Float -> [Form]
+sqArray s size = map (\x -> move x (filled red (square size))) s
 
 grid : Float -> Element
 grid n =
@@ -35,12 +24,9 @@ grid n =
          l = n / 2
          c = round n
          s = l / 2
+         locs = locations s
      in
          collage c c
-         ([ sq n ,
-           lines l ,
-           gridLines l
-
-          ] ++ (sqArray s))
+         ([ sq n ] ++ (sqArray locs (s - 10)))
 
 main = grid 400

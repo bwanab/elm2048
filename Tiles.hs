@@ -1,8 +1,4 @@
 module Tiles
--- ( swipe
--- , rotate
--- , Tile
--- )
 where
 
 import Data.List
@@ -81,7 +77,7 @@ getEmptyIndex n l = head (drop n (elemIndices Empty l))
 replaceEmpty :: Int -> Tile -> [Tile] -> [Tile]
 replaceEmpty n t l = (take n l) ++ [t] ++ (drop (n + 1) l)
 
-splitAll :: Int -> [Tile] -> [[Tile]]
+splitAll :: Int -> [a] -> [[a]]
 splitAll _ [] = []
 splitAll n x = let
                   (y,ys) = splitAt n x
