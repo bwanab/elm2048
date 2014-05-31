@@ -84,7 +84,7 @@ splitAll n x = let
                in
                   y:splitAll n ys
 
-ithRow :: Int -> [[Tile]] -> [Tile]
+ithRow :: Int -> [a] -> a
 ithRow n rows = head (drop n rows)
 
 printRows :: [[Tile]] -> IO()
@@ -120,3 +120,6 @@ domain r = do
 
 main = do
      domain initialRows
+
+--mytranspose :: [[a]] -> [[a]]
+--mytranspose rows = map (\n r -> ithRow n r) (zip [1..4] rows)

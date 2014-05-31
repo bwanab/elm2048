@@ -1,12 +1,13 @@
 import Tiles
 import Dict
 
-tc = [(Tiles.empty, darkGrey), (Tiles.t2,lightGrey), (Tiles.t4, grey),
-      (Tiles.t8, lightYellow), (Tiles.t16, darkYellow), (Tiles.t32, lightOrange),
-      (Tiles.t64, orange), (Tiles.t128, darkOrange), (Tiles.t256, lightRed),
-      (Tiles.t512, red), (Tiles.t1024, darkRed), (Tiles.t2048, green)]
+tc = [darkGrey, lightGrey, grey,
+      lightYellow, darkYellow, lightOrange,
+      orange, darkOrange, lightRed,
+      red, darkRed, green]
 
-tileColor = Dict.fromList tc
+
+tileColor = Dict.fromList (zip Tiles.tileList tc)
 
 sq : Float -> Form
 sq n = let clr = charcoal
@@ -26,8 +27,8 @@ locations n = let
 sqArray : [(Float,Float)] -> Float -> [Form]
 sqArray s size = map (\x -> move x (filled darkGrey (square size))) s
 
-grid : Float -> Element
-grid n =
+grid : Float -> [[Tiles.Tile]] -> Element
+grid n rows =
      let
          l = n / 2
          c = round n
@@ -37,4 +38,4 @@ grid n =
          collage c c
          ([ sq n ] ++ (sqArray locs (s - 10)))
 
-main = grid 400
+main = grid 400 Tiles.initialRows
