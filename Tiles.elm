@@ -141,7 +141,16 @@ flatten : [[Tile]] -> [Tile]
 flatten rows = foldr (++) [] rows
 
 sqArray : [((Float,Float),Tile)] -> Float -> [Form]
-sqArray s size = map (\x -> move (fst x) (filled (Dict.getOrElse darkGrey (tileStr (snd x)) tileColor) (square size))) s
+sqArray s size =
+        let
+           color x = (Dict.getOrElse darkGrey (tileStr (snd x)) tileColor)
+           t x = let
+                    n = (tileNum (snd x))
+                 in
+                    toForm (plainText (if n > 0 then (show n) else ""))
+           len = round size
+        in
+           map (\x -> move (fst x) (toForm (collage len len [(filled (color x) (square size)), (t x)]))) s
 
 grid : Float -> [[Tile]] -> Element
 grid n rows =
