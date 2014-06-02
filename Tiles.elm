@@ -1,7 +1,6 @@
 module Tiles where
 
 import Dict
-import Keyboard
 
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
@@ -172,20 +171,3 @@ grid n rows =
      in
          collage c c
          ([ sq n ] ++ (sqArray (zip locs (flatten rows)) (s - 10)))
-
-type GameState = {rows : [[Tile]]}
-gameState : GameState
-gameState = { rows = initialRows}
-
-setState x r = if | x.x == -1 -> swipeAndAdd RightToLeft r
-                  | x.x == 1 -> swipeAndAdd LeftToRight r
-                  | x.y == -1 -> swipeAndAdd TopToBottom r
-                  | x.y == 1 -> swipeAndAdd BottomToTop r
-                  | otherwise -> r
-
-doturn x = let
-                gameState = {gameState | rows <- setState x gameState.rows}
-           in
-                grid 400 gameState.rows
-
-main = lift doturn Keyboard.arrows

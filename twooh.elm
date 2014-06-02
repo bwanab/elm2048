@@ -1,41 +1,30 @@
-import Tiles
-import Dict
+import Tiles (Tile, swipeAndAdd, RightToLeft, LeftToRight, TopToBottom, BottomToTop, initialRows)
+import Window
+import Keyboard
 
-tc = [darkGrey, lightGrey, grey,
-      lightYellow, darkYellow, lightOrange,
-      orange, darkOrange, lightRed,
-      red, darkRed, green]
+userInput : Signal
+userInput = Keyboard.arrows
 
 
-tileColor = Dict.fromList (zip Tiles.tileList tc)
+type GameState = [[Tile]]
+defaultGame : GameState
+defaultGame = initialRows
 
-sq : Float -> Form
-sq n = let clr = charcoal
-       in filled clr (rect n n)
+setState x r = if | x.x == -1 -> swipeAndAdd RightToLeft r
+                  | x.x == 1 -> swipeAndAdd LeftToRight r
+                  | x.y == -1 -> swipeAndAdd TopToBottom r
+                  | x.y == 1 -> swipeAndAdd BottomToTop r
+                  | otherwise -> r
 
-permutations : [a] -> [b] -> [(a,b)]
-permutations xs ys =  concat (map (\y -> (map (\x -> (x, y)) xs)) ys)
+stepGame : Input -> GameState -> GameState
+stepGame userInput gameState = setState userInput gameState
 
-locations : Float -> [(Float, Float)]
-locations n = let
-                l = n / 2
-                l2 = n + l
-                s = [-l2, -l, l, l2]
-            in
-                permutations (reverse s) s
+display : (Int, Int) -> GameState -> Element
+display (w,h) gameState = grid w gameState
 
-sqArray : [(Float,Float)] -> Float -> [Form]
-sqArray s size = map (\x -> move x (filled darkGrey (square size))) s
+input lift Input userInput
 
-grid : Float -> [[Tiles.Tile]] -> Element
-grid n rows =
-     let
-         l = n / 2
-         c = round n
-         s = l / 2
-         locs = locations s
-     in
-         collage c c
-         ([ sq n ] ++ (sqArray locs (s - 10)))
+gameState = foldp stepGame defaultGame input
 
-main = grid 400 Tiles.initialRows
+main : Signal : Element
+main = lift2 display Window.dimensions gameState
