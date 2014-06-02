@@ -1,6 +1,7 @@
 module Tiles where
 
 import Dict
+import Keyboard
 
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
@@ -99,6 +100,15 @@ swipe dir rows = if | dir == RightToLeft -> map (\row -> swipeRow row) rows
                     | dir == TopToBottom -> rotate TRight (swipe RightToLeft (rotate TLeft rows))
 
 
+swipeAndAdd : SwipeDirection -> [[Tile]] -> [[Tile]]
+swipeAndAdd dir rows = let
+                          r = swipe dir rows
+                          l = flatten r
+                          re = replaceOneEmpty l
+                       in
+                          splitAll 4 re
+
+
 elemIndices : a -> [a] -> [Int]
 elemIndices val l = filter (\v -> v > 0) (map (\(i,v) -> if v == val then i else -1) (zip [0..(length l)] l))
 
@@ -163,4 +173,19 @@ grid n rows =
          collage c c
          ([ sq n ] ++ (sqArray (zip locs (flatten rows)) (s - 10)))
 
-main = grid 400 initialRows
+type GameState = {rows : [[Tile]]}
+gameState : GameState
+gameState = { rows = initialRows}
+
+setState x r = if | x.x == -1 -> swipeAndAdd RightToLeft r
+                  | x.x == 1 -> swipeAndAdd LeftToRight r
+                  | x.y == -1 -> swipeAndAdd TopToBottom r
+                  | x.y == 1 -> swipeAndAdd BottomToTop r
+                  | otherwise -> r
+
+doturn x = let
+                gameState = {gameState | rows <- setState x gameState.rows}
+           in
+                grid 400 gameState.rows
+
+main = lift doturn Keyboard.arrows
