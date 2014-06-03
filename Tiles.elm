@@ -1,4 +1,6 @@
 module Tiles where
+import Window
+import Keyboard
 
 import Dict
 
@@ -171,3 +173,28 @@ grid n rows =
      in
          collage c c
          ([ sq n ] ++ (sqArray (zip locs (flatten rows)) (s - 10)))
+
+
+------------------------------------------------------------------------------------
+type Input = { x: Int, y: Int }
+userInput = dropRepeats Keyboard.arrows
+
+type GameState = {rows : [[Tile]]}
+defaultGame : GameState
+defaultGame = {rows = initialRows}
+
+setState x y r = if | x == -1 -> swipeAndAdd RightToLeft r
+                    | x == 1 -> swipeAndAdd LeftToRight r
+                    | y == -1 -> swipeAndAdd TopToBottom r
+                    | y == 1 -> swipeAndAdd BottomToTop r
+                    | otherwise -> r
+
+stepGame : Input -> GameState -> GameState
+stepGame {x, y} gameState = { gameState | rows <- setState x y gameState.rows }
+
+display : (Int, Int) -> GameState -> Element
+display (w,h) gameState = container w h middle (grid 400 gameState.rows)
+
+gameState = foldp stepGame defaultGame userInput
+
+main = lift2 display Window.dimensions gameState
