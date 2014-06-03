@@ -90,7 +90,10 @@ swipe1 row = if | row == [] -> []
                                                              else x :: (swipe1 xs)
 
 swipeRow : [Tile] -> [Tile]
-swipeRow row = swipe1 (swipe1 row)
+swipeRow row = let
+                   l = swipe1 (swipe1 row)
+               in
+                   l ++ take (4 - (length l)) (repeat 4 Empty)
 
 data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
 
@@ -183,10 +186,10 @@ type GameState = {rows : [[Tile]]}
 defaultGame : GameState
 defaultGame = {rows = initialRows}
 
-setState x y r = if | x == -1 -> swipeAndAdd RightToLeft r
-                    | x == 1 -> swipeAndAdd LeftToRight r
-                    | y == -1 -> swipeAndAdd TopToBottom r
-                    | y == 1 -> swipeAndAdd BottomToTop r
+setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
+                    | x == -1 -> swipeAndAdd LeftToRight r
+                    | y == 1 -> swipeAndAdd TopToBottom r
+                    | y == -1 -> swipeAndAdd BottomToTop r
                     | otherwise -> r
 
 stepGame : Input -> GameState -> GameState
