@@ -4,6 +4,44 @@ import Keyboard
 
 import Dict
 
+-----------------------------------------------------------------------------------------
+-- these functions are generic functionality
+-----------------------------------------------------------------------------------------
+
+-- splits a list into groups of n size
+splitAll : Int -> [a] -> [[a]]
+splitAll n x = if | x == [] -> []
+                  | otherwise -> (take n x) :: (splitAll 4 (drop n x))
+
+-- transpose a matrix
+transpose : [[a]] -> [[a]]
+transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..3]
+
+-- returns a list of indices to items in list that equal val
+elemIndices : a -> [a] -> [Int]
+elemIndices val l = filter (\v -> v >= 0) (map (\(i,v) -> if v == val then i else -1) (zip [0..(length l)] l))
+
+-- return all the permutations of a list
+permutations : [a] -> [b] -> [(a,b)]
+permutations xs ys =  concat (map (\y -> (map (\x -> (x, y)) xs)) ys)
+
+-- flattens a list of lists to a single list. Note if the a values are themselves lists they won't be flatten further.
+flatten : [[a]] -> [a]
+flatten rows = foldr (++) [] rows
+
+-- iterate - for a function f on val a with list l invokes f(a,x1) then f(f(a,x2),... for each element xn of l
+-- this is different from haskell's iterate since elm isn't lazy.
+iterate : (a -> b -> a) -> a -> [b] -> [a]
+iterate f a l = if | l == [] -> []
+                   | otherwise -> let
+                                      v = (f a (head l))
+                                  in
+                                      v :: (iterate f v (tail l))
+-----------------------------------------------------------------------------------------
+-- the non-frp part of the 2048 engine
+-----------------------------------------------------------------------------------------
+
+
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
 
@@ -52,11 +90,8 @@ tiles t = let
 --tileList = ["Empty","T2","T4","T8","T16","T32","T64","T128","T256","T512","T1024","T2048"]
 tileList = map tileStr (tiles Empty)
 
-m = Dict.fromList (zip [1..15] [1,1,2,2,4,3,5,7,3,8,1,10,5,9,13])
+m = Dict.fromList (zip [1..15] [0,1,2,2,4,3,5,7,3,8,1,10,5,9,13])
 
-splitAll : Int -> [a] -> [[a]]
-splitAll n x = if | x == [] -> []
-                  | otherwise -> (take n x) :: (splitAll 4 (drop n x))
 
 
 numEmpty : [Tile] -> Int
@@ -67,8 +102,6 @@ replaceEmpty n t l = (take n l) ++ [t] ++ (drop (n + 1) l)
 
 data Rotation = TLeft | TRight | Flip
 
-transpose : [[a]] -> [[a]]
-transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..3]
 
 rotate : Rotation -> [[Tile]] -> [[Tile]]
 rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
@@ -113,8 +146,6 @@ swipeAndAdd dir rows = let
                           splitAll 4 re
 
 
-elemIndices : a -> [a] -> [Int]
-elemIndices val l = filter (\v -> v > 0) (map (\(i,v) -> if v == val then i else -1) (zip [0..(length l)] l))
 
 getEmptyIndex : Int -> [Tile] -> Int
 getEmptyIndex n l = head (drop n (elemIndices Empty l))
@@ -140,8 +171,6 @@ sq : Float -> Form
 sq n = let clr = charcoal
        in filled clr (rect n n)
 
-permutations : [a] -> [b] -> [(a,b)]
-permutations xs ys =  concat (map (\y -> (map (\x -> (x, y)) xs)) ys)
 
 locations : Float -> [(Float, Float)]
 locations n = let
@@ -151,8 +180,6 @@ locations n = let
             in
                 permutations (reverse s) s
 
-flatten : [[Tile]] -> [Tile]
-flatten rows = foldr (++) [] rows
 
 sqArray : [((Float,Float),Tile)] -> Float -> [Form]
 sqArray s size =
@@ -179,6 +206,9 @@ grid n rows =
 
 
 ------------------------------------------------------------------------------------
+-- frp specific code
+------------------------------------------------------------------------------------
+
 type Input = { x: Int, y: Int }
 userInput = dropRepeats Keyboard.arrows
 
@@ -201,3 +231,31 @@ display (w,h) gameState = container w h middle (grid 400 gameState.rows)
 gameState = foldp stepGame defaultGame userInput
 
 main = lift2 display Window.dimensions gameState
+
+------------------------------------------------------------------------------------
+-- test code follows
+------------------------------------------------------------------------------------
+
+-- r = [
+--      [Empty, Empty, Empty, Empty],
+--      [Empty, Empty, Empty, T2],
+--      [Empty, Empty, T2, Empty],
+--      [Empty, Empty, T2, T2],
+--      [Empty, T2, Empty, Empty],
+--      [Empty, T2, Empty, T2],
+--      [Empty, T2, T2, Empty],
+--      [Empty, T2, T2, T2],
+--      [T2, Empty, Empty, Empty],
+--      [T2, Empty, Empty, T2],
+--      [T2, Empty, T2, Empty],
+--      [T2, Empty, T2, T2],
+--      [T2, T2, Empty, Empty],
+--      [T2, T2, Empty, T2],
+--      [T2, T2, T2, Empty],
+--      [T2, T2, T2, T2]]
+
+-- d = flatten (repeat 20 [TopToBottom, BottomToTop, RightToLeft, LeftToRight])
+
+-- bad = [[T4,T2,T8,Empty],[T4,T16,Empty,Empty],[T4,T2,Empty,Empty],[T2,Empty,Empty,Empty]]
+
+-- badDir = LeftToRight
