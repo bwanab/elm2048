@@ -108,6 +108,8 @@ rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
                    | r == TRight -> reverse (transpose rows)
                    | r == Flip -> map (\row -> reverse row) rows
 
+tally = { score = 0 }
+
 swipe1 : [Tile] -> [Tile]
 swipe1 row = if | row == [] -> []
                 | otherwise -> let
@@ -119,7 +121,11 @@ swipe1 row = if | row == [] -> []
                                    | otherwise -> let
                                                    y = head xs
                                                   in
-                                                   if x == y then (tileSucc x) :: swipe1 (tail xs)
+                                                   if x == y then
+                                                                  let
+                                                                     l = {tally | score <- tally.score + 2 * (tileNum x) }
+                                                                  in
+                                                                     (tileSucc x) :: swipe1 (tail xs)
                                                              else x :: (swipe1 xs)
 
 swipeRow : [Tile] -> [Tile]
@@ -212,9 +218,9 @@ grid n rows =
 type Input = { x: Int, y: Int }
 userInput = dropRepeats Keyboard.arrows
 
-type GameState = {rows : [[Tile]]}
+type GameState = {rows : [[Tile]], score : Int}
 defaultGame : GameState
-defaultGame = {rows = initialRows}
+defaultGame = {rows = initialRows, score = 0}
 
 setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
                     | x == -1 -> swipeAndAdd LeftToRight r
