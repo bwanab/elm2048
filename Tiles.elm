@@ -110,6 +110,8 @@ rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
 
 tally = { score = 0 }
 
+bumpScore tally x = {tally | score <- tally.score + 2 * (tileNum x) }
+
 swipe1 : [Tile] -> [Tile]
 swipe1 row = if | row == [] -> []
                 | otherwise -> let
@@ -121,11 +123,7 @@ swipe1 row = if | row == [] -> []
                                    | otherwise -> let
                                                    y = head xs
                                                   in
-                                                   if x == y then
-                                                                  let
-                                                                     l = {tally | score <- tally.score + 2 * (tileNum x) }
-                                                                  in
-                                                                     (tileSucc x) :: swipe1 (tail xs)
+                                                   if x == y then (tileSucc x) :: swipe1 (tail xs)
                                                              else x :: (swipe1 xs)
 
 swipeRow : [Tile] -> [Tile]
@@ -229,10 +227,11 @@ setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
                     | otherwise -> r
 
 stepGame : Input -> GameState -> GameState
-stepGame {x, y} gameState = { gameState | rows <- setState x y gameState.rows }
+stepGame {x, y} gameState = { gameState | rows <- setState x y gameState.rows,
+                                          score <- tally.score}
 
 display : (Int, Int) -> GameState -> Element
-display (w,h) gameState = container w h middle (grid 400 gameState.rows)
+display (w,h) gameState = container w h middle (flow down [ (plainText (show gameState.score)), (grid 400 gameState.rows) ])
 
 gameState = foldp stepGame defaultGame userInput
 
