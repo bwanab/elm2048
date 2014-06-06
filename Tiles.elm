@@ -44,6 +44,7 @@ iterate f a l = if | l == [] -> []
 
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
+type GameState = {rows : [[Tile]], score : Int}
 
 tileNum : Tile -> Int
 tileNum t = case t of
@@ -123,19 +124,13 @@ swipe1 row = if | row == [] -> []
                                    | otherwise -> let
                                                    y = head xs
                                                   in
-                                                   if x == y then (tileSucc x) :: swipe1 (tail xs)
+                                                   if x == y then (tileSucc x) :: swipe1 ((tail xs) ++ [Empty])
                                                              else x :: (swipe1 xs)
-
-swipeRow : [Tile] -> [Tile]
-swipeRow row = let
-                   l = swipe1 (swipe1 row)
-               in
-                   l ++ take (4 - (length l)) (repeat 4 Empty)
 
 data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
 
 swipe : SwipeDirection -> [[Tile]] -> [[Tile]]
-swipe dir rows = if | dir == RightToLeft -> map (\row -> swipeRow row) rows
+swipe dir rows = if | dir == RightToLeft -> map (\row -> swipe1 row) rows
                     | dir == BottomToTop -> rotate TLeft (swipe RightToLeft (rotate TRight rows))
                     | dir == LeftToRight -> rotate Flip (swipe RightToLeft (rotate Flip rows))
                     | dir == TopToBottom -> rotate TRight (swipe RightToLeft (rotate TLeft rows))
@@ -231,7 +226,8 @@ stepGame {x, y} gameState = { gameState | rows <- setState x y gameState.rows,
                                           score <- tally.score}
 
 display : (Int, Int) -> GameState -> Element
-display (w,h) gameState = container w h middle (flow down [ (plainText (show gameState.score)), (grid 400 gameState.rows) ])
+display (w,h) gameState = container w h middle (flow down [ (plainText (show gameState.score)),
+                                                            (grid 400 gameState.rows) ])
 
 gameState = foldp stepGame defaultGame userInput
 
