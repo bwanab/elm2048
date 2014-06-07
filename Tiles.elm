@@ -109,42 +109,50 @@ rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
                    | r == TRight -> reverse (transpose rows)
                    | r == Flip -> map (\row -> reverse row) rows
 
-tally = { score = 0 }
+computeScore Tile -> Int
+computeScore x = 2 * (tileNum x)
 
-bumpScore tally x = {tally | score <- tally.score + 2 * (tileNum x) }
-
-swipe1 : [Tile] -> [Tile]
-swipe1 row = if | row == [] -> []
+swipe1 : ([Tile],[Int]) -> ([Tile],[Int])
+swipe1 (row, score) =
+             if | row == [] -> ([],[])
                 | otherwise -> let
                                 x = head row
                                 xs = tail row
                                in
-                                if | x == Empty -> swipe1 xs ++ [Empty]
-                                   | xs == [] -> [x]
+                                if | x == Empty -> (swipe1 (xs ++ [Empty]) score)
+                                   | xs == [] -> ([x], score)
                                    | otherwise -> let
                                                    y = head xs
                                                   in
-                                                   if x == y then (tileSucc x) :: swipe1 ((tail xs) ++ [Empty])
+                                                   if x == y then ((tileSucc x) :: swipe1 ((tail xs) ++ [Empty]), score ++ [computeScore x])
                                                              else x :: (swipe1 xs)
 
 data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
 
-swipe : SwipeDirection -> [[Tile]] -> [[Tile]]
-swipe dir rows = if | dir == RightToLeft -> map (\row -> swipe1 row) rows
-                    | dir == BottomToTop -> rotate TLeft (swipe RightToLeft (rotate TRight rows))
-                    | dir == LeftToRight -> rotate Flip (swipe RightToLeft (rotate Flip rows))
-                    | dir == TopToBottom -> rotate TRight (swipe RightToLeft (rotate TLeft rows))
+swipe : SwipeDirection -> GameState -> GameState
+swipe dir gs =
+          let
+               scores = (repeat 4 [])
+          in
+               let x = if | dir == RightToLeft -> map (\row -> swipe1 row) zip gs.rows scores
+                          | dir == BottomToTop -> rotate TLeft (swipe RightToLeft (zip (rotate TRight gs.rows) scores))
+                          | dir == LeftToRight -> rotate Flip (swipe RightToLeft (zip (rotate Flip gs.rows) scores))
+                          | dir == TopToBottom -> rotate TRight (swipe RightToLeft (zip (rotate TLeft gs.rows) scores))
+               in -- we get back a list of (row, [score])
+                  {gs | rows <- (map (\(row, _) -> row) x),
+                        score <- foldr (+) 0 (map (\(_, score) -> score) x) }
 
 
-swipeAndAdd : SwipeDirection -> [[Tile]] -> [[Tile]]
-swipeAndAdd dir rows = let
-                          r = swipe dir rows
-                          l = flatten r
+
+
+
+swipeAndAdd : SwipeDirection -> GameState -> GameState
+swipeAndAdd dir gs = let
+                          r = swipe dir gs
+                          l = flatten r.rows
                           re = replaceOneEmpty l
                        in
-                          splitAll 4 re
-
-
+                          {r | rows = (splitAll 4 re)}
 
 getEmptyIndex : Int -> [Tile] -> Int
 getEmptyIndex n l = head (drop n (elemIndices Empty l))
@@ -215,6 +223,7 @@ type GameState = {rows : [[Tile]], score : Int}
 defaultGame : GameState
 defaultGame = {rows = initialRows, score = 0}
 
+setState : Int -> Int -> GameState -> GameState
 setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
                     | x == -1 -> swipeAndAdd LeftToRight r
                     | y == 1 -> swipeAndAdd TopToBottom r
@@ -222,8 +231,7 @@ setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
                     | otherwise -> r
 
 stepGame : Input -> GameState -> GameState
-stepGame {x, y} gameState = { gameState | rows <- setState x y gameState.rows,
-                                          score <- tally.score}
+stepGame {x, y} gameState = setState x y gameState
 
 display : (Int, Int) -> GameState -> Element
 display (w,h) gameState = container w h middle (flow down [ (plainText (show gameState.score)),
