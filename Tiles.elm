@@ -109,8 +109,13 @@ rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
                    | r == TRight -> reverse (transpose rows)
                    | r == Flip -> map (\row -> reverse row) rows
 
-computeScore Tile -> Int
+rotateGame : Rotation -> GameState -> GameState
+rotateGame r gs = {gs | rows <- (rotate r gs.rows) }
+
+
+computeScore : Tile -> Int
 computeScore x = 2 * (tileNum x)
+
 
 swipe1 : ([Tile],[Int]) -> ([Tile],[Int])
 swipe1 (row, score) =
@@ -119,32 +124,36 @@ swipe1 (row, score) =
                                 x = head row
                                 xs = tail row
                                in
-                                if | x == Empty -> (swipe1 (xs ++ [Empty]) score)
+                                if | x == Empty -> let
+                                                      (r, s) = swipe1 (xs, score)
+                                                   in
+                                                      ((r ++ [Empty]), s)
                                    | xs == [] -> ([x], score)
                                    | otherwise -> let
                                                    y = head xs
                                                   in
-                                                   if x == y then ((tileSucc x) :: swipe1 ((tail xs) ++ [Empty]), score ++ [computeScore x])
-                                                             else x :: (swipe1 xs)
+                                                   if x == y then
+                                                               let
+                                                                  (r, s) = swipe1 (((tail xs) ++ [Empty]), score)
+                                                               in
+                                                                  (((tileSucc x) :: r),  s ++ [computeScore x])
+                                                             else
+                                                                let (r, s) = (swipe1 (xs, score))
+                                                                in  ((x :: r), s)
 
 data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
 
 swipe : SwipeDirection -> GameState -> GameState
 swipe dir gs =
-          let
-               scores = (repeat 4 [])
-          in
-               let x = if | dir == RightToLeft -> map (\row -> swipe1 row) zip gs.rows scores
-                          | dir == BottomToTop -> rotate TLeft (swipe RightToLeft (zip (rotate TRight gs.rows) scores))
-                          | dir == LeftToRight -> rotate Flip (swipe RightToLeft (zip (rotate Flip gs.rows) scores))
-                          | dir == TopToBottom -> rotate TRight (swipe RightToLeft (zip (rotate TLeft gs.rows) scores))
-               in -- we get back a list of (row, [score])
-                  {gs | rows <- (map (\(row, _) -> row) x),
-                        score <- foldr (+) 0 (map (\(_, score) -> score) x) }
-
-
-
-
+        if | dir == BottomToTop -> rotateGame TLeft (swipe RightToLeft (rotateGame TRight gs))
+           | dir == LeftToRight -> rotateGame Flip (swipe RightToLeft (rotateGame Flip gs))
+           | dir == TopToBottom -> rotateGame TRight (swipe RightToLeft (rotateGame TLeft gs))
+           | dir == RightToLeft ->
+                 let
+                     x = map (\row -> swipe1 row) (zip gs.rows (repeat 4 []))
+                 in -- we get back a list of (row, [score])
+                     {gs | rows <- (map fst x),
+                           score <- gs.score + (foldr (+) 0 (map (\(_, l) -> (foldr (+) 0 l)) x)) }
 
 swipeAndAdd : SwipeDirection -> GameState -> GameState
 swipeAndAdd dir gs = let
@@ -152,7 +161,7 @@ swipeAndAdd dir gs = let
                           l = flatten r.rows
                           re = replaceOneEmpty l
                        in
-                          {r | rows = (splitAll 4 re)}
+                          {r | rows <- (splitAll 4 re) }
 
 getEmptyIndex : Int -> [Tile] -> Int
 getEmptyIndex n l = head (drop n (elemIndices Empty l))
@@ -219,7 +228,6 @@ grid n rows =
 type Input = { x: Int, y: Int }
 userInput = dropRepeats Keyboard.arrows
 
-type GameState = {rows : [[Tile]], score : Int}
 defaultGame : GameState
 defaultGame = {rows = initialRows, score = 0}
 
@@ -233,9 +241,17 @@ setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
 stepGame : Input -> GameState -> GameState
 stepGame {x, y} gameState = setState x y gameState
 
+showScore : Int -> Element
+showScore score =
+    let
+        g = (group [(filled lightGrey (rect 100 50)), (toForm (flow down [(plainText ("Score")),
+                                                                           (rightAligned (toText (show score)))]))])
+    in
+        collage 100 100 [g]
+
 display : (Int, Int) -> GameState -> Element
-display (w,h) gameState = container w h middle (flow down [ (plainText (show gameState.score)),
-                                                            (grid 400 gameState.rows) ])
+display (w,h) {rows, score} = container w h middle (flow down [ showScore score,
+                                                                (grid 400 rows) ])
 
 gameState = foldp stepGame defaultGame userInput
 
@@ -265,6 +281,6 @@ main = lift2 display Window.dimensions gameState
 
 -- d = flatten (repeat 20 [TopToBottom, BottomToTop, RightToLeft, LeftToRight])
 
--- bad = [[T4,T2,T8,Empty],[T4,T16,Empty,Empty],[T4,T2,Empty,Empty],[T2,Empty,Empty,Empty]]
+bad = [[T4,T2,T8,Empty],[T4,T16,Empty,Empty],[T4,T2,Empty,Empty],[T2,Empty,Empty,Empty]]
 
 -- badDir = LeftToRight
