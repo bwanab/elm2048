@@ -24,6 +24,22 @@ swipe1 (x:xs) | x == Empty = swipe1 xs ++ [Empty]
                                 if x == y then (succ x):swipe1 (tail xs)
                                           else x: (swipe1 xs)
 
+
+evalTile :: Tile -> [Tile] -> [Tile]
+evalTile x [] = [x]
+evalTile x (y:ys) | x == y = ys ++ [succ x, Empty]
+                  | y == Empty = ys
+                  | otherwise = x:y:ys
+
+
+swipe2 :: [Tile] -> [Tile]
+swipe2 tiles =
+   let
+       l = filter (/= Empty) tiles
+   in
+       foldr evalTile [] l
+
+
 -- swipeRow iterates swipe1 infinitely, then groups which means the first group with multiple
 -- values is the final value.
 -- TODO: since elm isn't lazy, this will have to be rethought.
