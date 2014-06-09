@@ -14,6 +14,22 @@ import System.Environment
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
           deriving (Show, Eq, Ord, Enum)
 
+tileNum :: Tile -> Int
+tileNum t = case t of
+                 Empty -> 0
+                 T2 -> 2
+                 T4 -> 4
+                 T8 -> 8
+                 T16 -> 16
+                 T32 -> 32
+                 T64 -> 64
+                 T128 -> 128
+                 T256 -> 256
+                 T512 -> 512
+                 T1024 -> 1024
+                 T2048 -> 2048
+
+
 swipe1 :: [Tile] -> [Tile]
 swipe1 [] = []
 swipe1 (x:xs) | x == Empty = swipe1 xs ++ [Empty]
@@ -35,10 +51,20 @@ evalTile x (y:ys) | x == y = ys ++ [succ x, Empty]
 swipe2 :: [Tile] -> [Tile]
 swipe2 tiles =
    let
-       l = filter (/= Empty) tiles
+       l = (\r -> filter (/= Empty) r)
+       f = (\r -> r ++ take (4 - (length r)) (repeat Empty))
    in
-       foldr evalTile [] l
+       f (l (foldr evalTile [] (l tiles)))
 
+addTiles :: Tile -> Int -> Int
+addTiles x y = tileNum x + y
+
+computeScore :: [Tile] -> [Tile] -> Int
+computeScore new old =
+   let
+       h = head (reverse (sort old))
+   in
+       foldr addTiles 0 (filter (\n -> n > h) new)
 
 -- swipeRow iterates swipe1 infinitely, then groups which means the first group with multiple
 -- values is the final value.
