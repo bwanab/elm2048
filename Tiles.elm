@@ -1,7 +1,7 @@
 module Tiles where
 import Window
 import Keyboard
-
+import Time
 import Dict
 
 -----------------------------------------------------------------------------------------
@@ -183,8 +183,8 @@ swipe dir gs =
                         {gs | rows <- x,
                               score <- gs.score + earned }
 
-swipeAndAdd : SwipeDirection -> GameState -> GameState
-swipeAndAdd dir gs =
+swipeAndAdd : SwipeDirection -> GameState -> Int -> GameState
+swipeAndAdd dir gs rv =
     let
        r = swipe dir gs
     in
@@ -192,21 +192,25 @@ swipeAndAdd dir gs =
           then gs
           else let
                   l = flatten r.rows
-                  re = replaceOneEmpty l
+                  re = replaceOneEmpty rv l
                in
                   {r | rows <- (splitAll 4 re) }
 
 getEmptyIndex : Int -> [Tile] -> Int
 getEmptyIndex n l = head (drop n (elemIndices Empty l))
 
-replaceOneEmpty : [Tile] -> [Tile]
-replaceOneEmpty l = replaceEmpty (getEmptyIndex (maybe 1 (\n -> n) (Dict.get (numEmpty l) m)) l) T2 l
+replaceOneEmpty : Int -> [Tile] -> [Tile]
+replaceOneEmpty rv l =
+    let
+       t = if rv `mod` 4 == 0 then T4 else T2
+    in
+       replaceEmpty (getEmptyIndex (maybe 1 (\n -> n) (Dict.get (numEmpty l) m)) l) t l
 
 ir : [Tile]
 ir = repeat 16 Empty
 
 initialRows : [[Tile]]
-initialRows = splitAll 4 (replaceOneEmpty (replaceOneEmpty ir))
+initialRows = replaceOneEmpty 40 ir |> replaceOneEmpty 60 |> splitAll 4
 
 tc = [darkGrey, lightGrey, grey,
       lightYellow, darkYellow, lightOrange,

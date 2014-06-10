@@ -1,5 +1,6 @@
 import Window
 import Keyboard
+import Time
 import Tiles (..)
 
 ------------------------------------------------------------------------------------
@@ -8,21 +9,25 @@ import Tiles (..)
 
 main = lift2 display Window.dimensions gameState
 
-type Input = { x: Int, y: Int }
-userInput = dropRepeats Keyboard.arrows
+type Input = { x: Int, y: Int}
+type TimeInput = (Time, Input)
+
+userInput : Signal TimeInput
+userInput = Time.timestamp (dropRepeats Keyboard.arrows)
 
 defaultGame : GameState
 defaultGame = {rows = initialRows, score = 0}
 
-setState : Int -> Int -> GameState -> GameState
-setState x y r = if | x == 1 -> swipeAndAdd RightToLeft r
-                    | x == -1 -> swipeAndAdd LeftToRight r
-                    | y == 1 -> swipeAndAdd TopToBottom r
-                    | y == -1 -> swipeAndAdd BottomToTop r
-                    | otherwise -> r
+setState : Int -> Int -> Int -> GameState -> GameState
+setState x y rv r =
+       if | x == 1 -> swipeAndAdd RightToLeft r rv
+          | x == -1 -> swipeAndAdd LeftToRight r rv
+          | y == 1 -> swipeAndAdd TopToBottom r rv
+          | y == -1 -> swipeAndAdd BottomToTop r rv
+          | otherwise -> r
 
-stepGame : Input -> GameState -> GameState
-stepGame {x, y} gameState = setState x y gameState
+stepGame : TimeInput -> GameState -> GameState
+stepGame (rv, {x, y}) gameState = setState x y ((round rv) `mod` 100) gameState
 
 showScore : Int -> Element
 showScore score =
