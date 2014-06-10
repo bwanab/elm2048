@@ -204,13 +204,13 @@ replaceOneEmpty rv l =
     let
        t = if rv `mod` 4 == 0 then T4 else T2
     in
-       replaceEmpty (getEmptyIndex (maybe 1 (\n -> n) (Dict.get (numEmpty l) m)) l) t l
+       replaceEmpty (getEmptyIndex (rv `mod` (numEmpty l)) l) t l
 
 ir : [Tile]
 ir = repeat 16 Empty
 
 initialRows : [[Tile]]
-initialRows = replaceOneEmpty 40 ir |> replaceOneEmpty 60 |> splitAll 4
+initialRows = replaceOneEmpty 1 ir |> replaceOneEmpty 1 |> splitAll 4
 
 tc = [darkGrey, lightGrey, grey,
       lightYellow, darkYellow, lightOrange,
