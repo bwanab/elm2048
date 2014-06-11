@@ -96,7 +96,7 @@ tileSucc t = case t of
 
 tiles : Tile -> [Tile]
 tiles t = let
-            n = (tileSucc t)
+            n = tileSucc t
           in
             if | n == Empty -> [t]
                | otherwise -> t :: (tiles n)
@@ -170,9 +170,9 @@ data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
 
 swipe : SwipeDirection -> GameState -> GameState
 swipe dir gs =
-        if | dir == BottomToTop -> rotateGame TLeft (swipe RightToLeft (rotateGame TRight gs))
-           | dir == LeftToRight -> rotateGame Flip (swipe RightToLeft (rotateGame Flip gs))
-           | dir == TopToBottom -> rotateGame TRight (swipe RightToLeft (rotateGame TLeft gs))
+        if | dir == BottomToTop -> rotateGame TRight gs |> swipe RightToLeft |> rotateGame TLeft
+           | dir == LeftToRight -> rotateGame Flip gs |> swipe RightToLeft |> rotateGame Flip
+           | dir == TopToBottom -> rotateGame TLeft gs |> swipe RightToLeft |> rotateGame TRight
            | dir == RightToLeft ->
                  let
                      x = map swipeRow gs.rows
@@ -194,10 +194,10 @@ swipeAndAdd dir gs rv =
                   l = flatten r.rows
                   re = replaceOneEmpty rv l
                in
-                  {r | rows <- (splitAll 4 re) }
+                  {r | rows <- splitAll 4 re }
 
 getEmptyIndex : Int -> [Tile] -> Int
-getEmptyIndex n l = head (drop n (elemIndices Empty l))
+getEmptyIndex n l = elemIndices Empty l |> drop n |> head
 
 replaceOneEmpty : Int -> [Tile] -> [Tile]
 replaceOneEmpty rv l =

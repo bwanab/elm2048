@@ -32,13 +32,14 @@ stepGame (rv, {x, y}) gameState = setState x y ((round rv) `mod` 100) gameState
 showScore : Int -> Element
 showScore score =
     let
-        g = (group [(filled lightGrey (rect 100 50)), (toForm (flow down [(plainText ("Score")),
-                                                                           (rightAligned (toText (show score)))]))])
+        g = group [rect 100 50 |> filled lightGrey,
+                   toForm (flow down [plainText "Score",
+                                      show score |> toText |> rightAligned])]
     in
         collage 100 100 [g]
 
 display : (Int, Int) -> GameState -> Element
-display (w,h) {rows, score} = container w h middle (flow down [ showScore score,
-                                                                (grid 400 rows) ])
+display (w,h) {rows, score} = container w h middle (flow down [ flow right [spacer 300 50, showScore score],
+                                                                grid 400 rows ])
 
 gameState = foldp stepGame defaultGame userInput
