@@ -209,8 +209,8 @@ replaceOneEmpty rv l =
 ir : [Tile]
 ir = repeat 16 Empty
 
-initialRows : [[Tile]]
-initialRows = replaceOneEmpty 1 ir |> replaceOneEmpty 1 |> splitAll 4
+initialRows : Int -> [[Tile]]
+initialRows rnd = replaceOneEmpty rnd ir |> replaceOneEmpty ((rnd * 30) `mod` 100) |> splitAll 4
 
 tc = [darkGrey, lightGrey, grey,
       lightYellow, darkYellow, lightOrange,

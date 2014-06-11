@@ -9,14 +9,19 @@ import Tiles (..)
 
 main = lift2 display Window.dimensions gameState
 
-type Input = { x: Int, y: Int}
+type Input = { x: Int, y: Int, ss: Bool}
 type TimeInput = (Time, Input)
 
 userInput : Signal TimeInput
-userInput = Time.timestamp (dropRepeats Keyboard.arrows)
+userInput = Time.timestamp <| Input <~ lift .x Keyboard.arrows
+                                     ~ lift .y Keyboard.arrows
+                                     ~ Keyboard.space
 
 defaultGame : GameState
-defaultGame = {rows = initialRows, score = 0}
+defaultGame = {rows = initialRows 3, score = 0}
+
+newGame : Int -> GameState
+newGame rnd = {rows = initialRows rnd, score = 0}
 
 setState : Int -> Int -> Int -> GameState -> GameState
 setState x y rv r =
@@ -27,7 +32,11 @@ setState x y rv r =
           | otherwise -> r
 
 stepGame : TimeInput -> GameState -> GameState
-stepGame (rv, {x, y}) gameState = setState x y ((round rv) `mod` 100) gameState
+stepGame (rv, {x, y, ss}) gameState =
+    let
+        rnd = ((round rv) `mod` 100)
+    in
+        if ss then newGame rnd else setState x y rnd gameState
 
 showScore : Int -> Element
 showScore score =
