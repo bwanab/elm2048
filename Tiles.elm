@@ -210,7 +210,7 @@ ir : [Tile]
 ir = repeat 16 Empty
 
 initialRows : Int -> [[Tile]]
-initialRows rnd = replaceOneEmpty rnd ir |> replaceOneEmpty ((rnd * 30) `mod` 100) |> splitAll 4
+initialRows rnd = replaceOneEmpty rnd ir |> replaceOneEmpty (round (toFloat rnd / 10)) |> splitAll 4
 
 tc = [darkGrey, lightGrey, grey,
       lightYellow, darkYellow, lightOrange,

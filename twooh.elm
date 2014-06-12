@@ -31,6 +31,15 @@ setState x y rv r =
           | y == -1 -> swipeAndAdd BottomToTop r rv
           | otherwise -> r
 
+gameOver : GameState -> Bool
+gameOver gs =
+    numEmpty (flatten gs.rows) == 0 &&
+    gs == swipe TopToBottom gs &&
+    gs == swipe BottomToTop gs &&
+    gs == swipe RightToLeft gs &&
+    gs == swipe LeftToRight gs
+
+
 stepGame : TimeInput -> GameState -> GameState
 stepGame (rv, {x, y, ss}) gameState =
     let
@@ -47,7 +56,9 @@ showScore score =
         collage 100 100 [g]
 
 display : (Int, Int) -> GameState -> Element
-display (w,h) {rows, score} = container w h middle (flow down [ showScore score,
-                                                                (grid 400 rows) ])
+display (w,h) gs = container w h middle (flow down [ showScore gs.score,
+                                                     if gameOver gs then plainText "Game Over - Hit space bar to try again"
+                                                                    else plainText "",
+                                                     (grid 400 gs.rows) ])
 
 gameState = foldp stepGame defaultGame userInput
