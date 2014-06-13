@@ -44,7 +44,7 @@ iterate f a l = if | l == [] -> []
 
 data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
-type GameState = {rows : [[Tile]], score : Int}
+type GameState = {rows : [[Tile]], score : Int, t: Time}
 
 tileNum : Tile -> Int
 tileNum t = case t of
@@ -166,7 +166,7 @@ computeRow new old =
    in
        foldr addTiles 0 (filter (\n -> (tileNum n) > (tileNum h)) new)
 
-data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight
+data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight | NoSwipe
 
 swipe : SwipeDirection -> GameState -> GameState
 swipe dir gs =
@@ -186,9 +186,9 @@ swipe dir gs =
 swipeAndAdd : SwipeDirection -> GameState -> Int -> GameState
 swipeAndAdd dir gs rv =
     let
-       r = swipe dir gs
+       r = if dir == NoSwipe then gs else swipe dir gs
     in
-       if r == gs
+       if ((r == gs) && (dir /= NoSwipe)) || (numEmpty (flatten r.rows) == 0)
           then gs
           else let
                   l = flatten r.rows
@@ -209,8 +209,8 @@ replaceOneEmpty rv l =
 ir : [Tile]
 ir = repeat 16 Empty
 
-initialRows : [[Tile]]
-initialRows = replaceOneEmpty 1 ir |> replaceOneEmpty 1 |> splitAll 4
+initialRows : Int -> [[Tile]]
+initialRows rnd = replaceOneEmpty rnd ir |> replaceOneEmpty (round (toFloat rnd / 10)) |> splitAll 4
 
 tc = [darkGrey, lightGrey, grey,
       lightYellow, darkYellow, lightOrange,
