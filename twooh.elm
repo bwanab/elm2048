@@ -16,26 +16,22 @@ userInput : Signal TimeInput
 userInput = Time.timestamp <| Input <~ lift .x Keyboard.arrows
                                      ~ lift .y Keyboard.arrows
                                      ~ Keyboard.space
-                                     ~ Time.every (2 * second)
+                                     ~ Time.every second
 defaultGame : GameState
-defaultGame = {rows = initialRows 3, score = 0, t = 0}
+defaultGame = {rows = initialRows 3, score = 0, countdown = 5, currentcount = 5}
 
 newGame : Int -> GameState
-newGame rnd = {rows = initialRows rnd, score = 0, t = 0}
+newGame rnd = {rows = initialRows rnd, score = 0, countdown = 5, currentcount = 5}
 
-setState : Int -> Int -> Int -> Time -> GameState -> GameState
-setState x y rv t r =
+setState : Int -> Int -> Int -> GameState -> GameState
+setState x y rv r =
        if | x == 1 -> swipeAndAdd RightToLeft r rv
           | x == -1 -> swipeAndAdd LeftToRight r rv
           | y == 1 -> swipeAndAdd TopToBottom r rv
           | y == -1 -> swipeAndAdd BottomToTop r rv
-          | otherwise -> if (r.t /= t)
-                         then
-                            let
-                                ns = swipeAndAdd NoSwipe r rv
-                            in
-                                {ns | t <- t}
-                         else r
+          | otherwise -> if (r.currentcount <= 0)
+                         then swipeAndAdd NoSwipe r rv
+                         else {r | currentcount <- r.currentcount - 1}
 
 gameOver : GameState -> Bool
 gameOver gs =
@@ -47,23 +43,29 @@ gameOver gs =
 
 
 stepGame : TimeInput -> GameState -> GameState
-stepGame (rv, {x, y, ss, t}) gameState =
+stepGame (rv, {x, y, ss}) gameState =
     let
         rnd = ((round rv) `mod` 100)
     in
-        if ss then newGame rnd else setState x y rnd t gameState
+        if ss then newGame rnd else setState x y rnd gameState
 
-showScore : Int -> Element
-showScore score =
+showVal : String -> Int -> Element
+showVal label score =
     let
         g = group [rect 100 50 |> filled lightGrey,
-                   toForm (flow down [plainText "Score",
+                   toForm (flow down [plainText label,
                                       show score |> toText |> rightAligned])]
     in
         collage 100 100 [g]
 
+showScore : Int -> Element
+showScore score = showVal "Score" score
+
+showCountdown : Int -> Element
+showCountdown count = showVal "Countdown" count
+
 display : (Int, Int) -> GameState -> Element
-display (w,h) gs = container w h middle (flow down [ flow right [spacer 300 50, showScore gs.score],
+display (w,h) gs = container w h middle (flow down [ flow right [showCountdown gs.currentcount, spacer 200 50, showScore gs.score],
                                                      if gameOver gs then plainText "Game Over - Hit space bar to try again"
                                                                     else plainText "",
                                                      (grid 400 gs.rows) ])
