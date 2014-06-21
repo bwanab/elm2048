@@ -1,0 +1,60 @@
+<html>
+
+<head>
+  <title>Embedding Elm</title>
+  <script src="resources/elm-runtime.js"></script>
+  <script src="build/twooh.js"></script>
+  <style>
+  body {
+    background-image: url('resources/texture.png');
+    background-color: #d3d7cf;
+    font-family: "Lucida Grande","Trebuchet MS","Bitstream Vera Sans",Verdana,Helvetica,sans-serif;
+    font-size: 14px;
+  }
+  #twooh {
+    width:  400px;
+    height: 500px;
+    background-color: white;
+    border: 1px solid #babdb6;
+  }
+  #column {
+     width: 420px;
+     display: block;
+     margin-left: auto;
+     margin-right: auto;
+  }
+  </style>
+</head>
+
+<body>
+<div id="column">
+  <h1>Twooh</h1>
+
+  <p>This demo shows how to:</p>
+  <ol>
+    <li>embed an Elm program in HTML</li>
+    <li>send events back and forth between Elm and JavaScript</li>
+  </ol>
+  <p>The white square is an Elm program, but the rest is HTML, CSS, and JS.
+  </p>
+
+  <div id="twooh"></div>
+
+  <p>Hit to start.
+     <button onclick="resetTwooh()">Reset</button>
+  </p>
+
+  </div>
+</body>
+
+<script type="text/javascript">
+  // Show the stamp module in the "elm-stamps" div.
+  var div = document.getElementById('twooh');
+  var twooh = Elm.embed(Elm.Twooh, div, { reset:true });
+
+  function resetTwooh() {
+     twooh.ports.reset.send(true);
+  }
+</script>
+
+</html>
