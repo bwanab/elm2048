@@ -44,7 +44,7 @@ setState x y rv diff r =
           | x == -1 -> swipeAndAdd LeftToRight r rv
           | y == 1 -> swipeAndAdd TopToBottom r rv
           | y == -1 -> swipeAndAdd BottomToTop r rv
-          | otherwise -> if (r.currentcount <= 0)
+          | otherwise -> if r.currentcount <= 0
                          then swipeAndAdd NoSwipe r rv
                          else {r | currentcount <- r.currentcount - 1,
                                    countdown <- diff }
@@ -61,7 +61,7 @@ gameOver gs =
 stepGame : TimeInput -> GameState -> GameState
 stepGame (rv, {x, y, ss, diff}) gameState =
     let
-        rnd = ((round rv) `mod` 100)
+        rnd = (round rv) `mod` 100
     in
         if ss then newGame rnd else setState x y rnd diff gameState
 

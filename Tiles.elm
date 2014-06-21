@@ -15,7 +15,7 @@ splitAll n x = if | x == [] -> []
 
 -- transpose a matrix
 transpose : [[a]] -> [[a]]
-transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..3]
+transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..((length (head r)) - 1)]
 
 -- returns a list of indices to items in list that equal val
 elemIndices : a -> [a] -> [Int]
