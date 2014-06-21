@@ -1,3 +1,5 @@
+module Twooh where
+
 import Window
 import Keyboard
 import Time
@@ -26,10 +28,12 @@ difficultyDropdown =
 type Input = { x: Int, y: Int, ss: Bool, t: Time, diff: Int}
 type TimeInput = (Time, Input)
 
+port reset : Signal Bool
+
 userInput : Signal TimeInput
 userInput = Time.timestamp <| Input <~ lift .x Keyboard.arrows
                                      ~ lift .y Keyboard.arrows
-                                     ~ Keyboard.space
+                                     ~ merge Keyboard.space reset
                                      ~ Time.every second
                                      ~ difficulty.signal
 defaultGame : GameState
