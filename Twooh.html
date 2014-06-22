@@ -1,7 +1,7 @@
 <html>
 
 <head>
-  <title>Embedding Elm</title>
+  <title>Yet another elm 2048</title>
   <script src="resources/elm-runtime.js"></script>
   <script src="build/twooh.js"></script>
   <style>
@@ -14,7 +14,7 @@
   #twooh {
     width:  400px;
     height: 500px;
-    background-color: white;
+    background-color: grey;
     border: 1px solid #babdb6;
   }
   #column {
@@ -30,19 +30,14 @@
 <div id="column">
   <h1>Twooh</h1>
 
-  <p>This demo shows how to:</p>
+  <p>This is yet another elm 2048 embedded in a standard web page</p>
   <ol>
-    <li>embed an Elm program in HTML</li>
-    <li>send events back and forth between Elm and JavaScript</li>
+    <li>It has an extra <em>feature</em> in that depending on your setting, it will countdown after each hit. If it reaches 0, it will place a new number on the board. This has the effect of making it harder to win. </li>
   </ol>
-  <p>The white square is an Elm program, but the rest is HTML, CSS, and JS.
-  </p>
 
   <div id="twooh"></div>
 
-  <p>Hit to start.
-     <button onclick="resetTwooh()">Reset</button>
-  </p>
+  <p>Hit spacebar to restart. </p>
 
   </div>
 </body>

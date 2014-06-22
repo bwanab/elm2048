@@ -234,6 +234,8 @@ locations n = let
             in
                 permutations (reverse s) s
 
+numberStyle = {defaultStyle | bold <- True,
+                              height <- Just 36}
 
 sqArray : [((Float,Float),Tile)] -> Float -> [Form]
 sqArray s size =
@@ -242,7 +244,7 @@ sqArray s size =
            t x = let
                     n = (tileNum (snd x))
                  in
-                    toForm (plainText (if n > 0 then (show n) else ""))
+                    toForm (centered (style numberStyle (toText (if n > 0 then (show n) else ""))))
            len = round size
         in
            map (\x -> move (fst x) (toForm (collage len len [(filled (color x) (square size)), (t x)]))) s

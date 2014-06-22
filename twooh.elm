@@ -84,6 +84,10 @@ showScore score = showVal "Score" score
 showCountdown : Int -> Element
 showCountdown count = showVal "Countdown" count
 
+gameOverStyle = {defaultStyle | bold <- True,
+                                height <- Just 24,
+                                color <- red }
+
 display : (Int, Int) -> GameState -> Element
 display (w,h) gs = container w h middle (flow down [ flow right [if gs.countdown < 100 then showCountdown gs.currentcount
                                                                                        else spacer 100 50,
@@ -91,7 +95,7 @@ display (w,h) gs = container w h middle (flow down [ flow right [if gs.countdown
                                                                  difficultyDropdown,
                                                                  spacer 50 50,
                                                                  showScore gs.score],
-                                                     if gameOver gs then plainText "Game Over - Hit space bar to try again"
-                                                                    else plainText "",
-                                                     (grid 400 gs.rows) ])
+                                                     (grid 400 gs.rows),
+                                                     if gameOver gs then toText "Game Over" |> style gameOverStyle  |> centered
+                                                                    else plainText "" ])
 gameState = foldp stepGame defaultGame userInput
