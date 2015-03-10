@@ -2,36 +2,42 @@ module Tiles where
 import Window
 import Keyboard
 import Time
-import Dict
+import Dict (fromList, get)
+import Maybe ( Maybe(..), withDefault)
+import List (map, take, (::), drop, head, length, filter, map2, concat, foldr, tail, reverse, repeat, sort)
+import Color (darkGrey, lightGrey, grey, lightYellow, darkYellow, lightOrange, orange, darkOrange, lightRed, red, darkRed, green, charcoal)
+import Graphics.Collage (filled, rect, Form, toForm, move, collage, square)
+import Graphics.Element(..)
+import Text (centered, style, fromString, defaultStyle)
 
 -----------------------------------------------------------------------------------------
 -- these functions are generic functionality
 -----------------------------------------------------------------------------------------
 
 -- splits a list into groups of n size
-splitAll : Int -> [a] -> [[a]]
+splitAll : Int -> List a -> List (List a)
 splitAll n x = if | x == [] -> []
                   | otherwise -> (take n x) :: (splitAll 4 (drop n x))
 
 -- transpose a matrix
-transpose : [[a]] -> [[a]]
+transpose : List (List a) -> List (List a)
 transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..((length (head r)) - 1)]
 
 -- returns a list of indices to items in list that equal val
-elemIndices : a -> [a] -> [Int]
-elemIndices val l = filter (\v -> v >= 0) (map (\(i,v) -> if v == val then i else -1) (zip [0..(length l)] l))
+elemIndices : a -> List a -> List Int
+elemIndices val l = filter (\v -> v >= 0) (map (\(i,v) -> if v == val then i else -1) (map2 (,) [0..(length l)] l))
 
 -- return all the permutations of a list
-permutations : [a] -> [b] -> [(a,b)]
+permutations : List a -> List b -> List (a,b)
 permutations xs ys =  concat (map (\y -> (map (\x -> (x, y)) xs)) ys)
 
 -- flattens a list of lists to a single list. Note if the a values are themselves lists they won't be flatten further.
-flatten : [[a]] -> [a]
+flatten : List (List a) -> List a
 flatten rows = foldr (++) [] rows
 
 -- iterate - for a function f on val a with list l invokes f(a,x1) then f(f(a,x2),... for each element xn of l
 -- this is different from haskell's iterate since elm isn't lazy.
-iterate : (a -> b -> a) -> a -> [b] -> [a]
+iterate : (a -> b -> a) -> a -> List b -> List a
 iterate f a l = if | l == [] -> []
                    | otherwise -> let
                                       v = (f a (head l))
@@ -42,9 +48,9 @@ iterate f a l = if | l == [] -> []
 -----------------------------------------------------------------------------------------
 
 
-data Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
+type Tile = Empty | T2 | T4 | T8 | T16 | T32 | T64 | T128 | T256 | T512 | T1024 | T2048
 --          deriving (Show, Eq, Ord, Enum)
-type GameState = {rows : [[Tile]], score : Int, countdown: Int, currentcount: Int}
+type alias GameState = {rows : List (List Tile), score : Int, countdown: Int, currentcount: Int}
 
 tileNum : Tile -> Int
 tileNum t = case t of
@@ -77,7 +83,7 @@ numTile t = case t of
                  2048 -> T2048
 
 tileStr : Tile -> String
-tileStr t = show (tileNum t)
+tileStr t = toString (tileNum t)
 
 tileSucc : Tile -> Tile
 tileSucc t = case t of
@@ -94,7 +100,7 @@ tileSucc t = case t of
                  T1024 -> T2048
                  T2048 -> Empty
 
-tiles : Tile -> [Tile]
+tiles : Tile -> List Tile
 tiles t = let
             n = tileSucc t
           in
@@ -106,20 +112,20 @@ tiles t = let
 --tileList = ["Empty","T2","T4","T8","T16","T32","T64","T128","T256","T512","T1024","T2048"]
 tileList = map tileStr (tiles Empty)
 
-m = Dict.fromList (zip [1..15] [0,1,2,2,4,3,5,7,3,8,1,10,5,9,13])
+m = fromList (map2 (,) [1..15] [0,1,2,2,4,3,5,7,3,8,1,10,5,9,13])
 
 
 
-numEmpty : [Tile] -> Int
+numEmpty : List Tile -> Int
 numEmpty l = length (filter (\x -> x == Empty) l)
 
-replaceEmpty : Int -> Tile -> [Tile] -> [Tile]
+replaceEmpty : Int -> Tile -> List Tile -> List Tile
 replaceEmpty n t l = (take n l) ++ [t] ++ (drop (n + 1) l)
 
-data Rotation = TLeft | TRight | Flip
+type Rotation = TLeft | TRight | Flip
 
 
-rotate : Rotation -> [[Tile]] -> [[Tile]]
+rotate : Rotation -> List (List Tile) -> List (List Tile)
 rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
                    | r == TRight -> reverse (transpose rows)
                    | r == Flip -> map (\row -> reverse row) rows
@@ -132,7 +138,7 @@ rotateGame r gs = {gs | rows <- (rotate r gs.rows) }
 -- else, look at last entered element, if it equals y, then we have a match, so consolidate and pad with empty
 --                                     if it is empty, them discard both it and x
 --                                     otherwise, add x to the existing row.
-evalTile : Tile -> [Tile] -> [Tile]
+evalTile : Tile -> List Tile -> List Tile
 evalTile x row =
    if | row == [] -> [x]
       | x == Empty -> tail row
@@ -145,7 +151,7 @@ evalTile x row =
                 | y == Empty -> ys
                 | otherwise -> x::row
 
-swipeRow : [Tile] -> [Tile]
+swipeRow : List Tile -> List Tile
 swipeRow tiles =
    let
        removeEmpty = (\r -> filter (\t -> t /= Empty) r)
@@ -156,17 +162,17 @@ swipeRow tiles =
 addTiles : Tile -> Int -> Int
 addTiles x y = tileNum x + y
 
-sortTiles : [Tile] -> [Tile]
+sortTiles : List Tile -> List Tile
 sortTiles tiles = map tileNum tiles |> sort |> map numTile
 
-computeRow : [Tile] -> [Tile] -> Int
+computeRow : List Tile -> List Tile -> Int
 computeRow new old =
    let
        h = sortTiles old |> reverse |> head
    in
        foldr addTiles 0 (filter (\n -> (tileNum n) > (tileNum h)) new)
 
-data SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight | NoSwipe
+type SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight | NoSwipe
 
 swipe : SwipeDirection -> GameState -> GameState
 swipe dir gs =
@@ -178,7 +184,7 @@ swipe dir gs =
                      x = map swipeRow gs.rows
                  in
                      let
-                        earned = zip x gs.rows |> map (\(n,o) -> computeRow n o) |> foldr (+) 0
+                        earned = map2 (,) x gs.rows |> map (\(n,o) -> computeRow n o) |> foldr (+) 0
                      in
                         {gs | rows <- x,
                               score <- gs.score + earned }
@@ -196,20 +202,20 @@ swipeAndAdd dir gs rv =
                in
                   {r | rows <- splitAll 4 re, currentcount <- r.countdown + 1}
 
-getEmptyIndex : Int -> [Tile] -> Int
+getEmptyIndex : Int -> List Tile -> Int
 getEmptyIndex n l = elemIndices Empty l |> drop n |> head
 
-replaceOneEmpty : Int -> [Tile] -> [Tile]
+replaceOneEmpty : Int -> List Tile -> List Tile
 replaceOneEmpty rv l =
     let
-       t = if rv `mod` 4 == 0 then T4 else T2
+       t = if rv % 4 == 0 then T4 else T2
     in
-       replaceEmpty (getEmptyIndex (rv `mod` (numEmpty l)) l) t l
+       replaceEmpty (getEmptyIndex (rv % (numEmpty l)) l) t l
 
-ir : [Tile]
+ir : List Tile
 ir = repeat 16 Empty
 
-initialRows : Int -> [[Tile]]
+initialRows : Int -> List (List Tile)
 --initialRows rnd = replaceOneEmpty rnd ir |> replaceOneEmpty (round (toFloat rnd / 10)) |> splitAll 4
 initialRows rnd = replaceOneEmpty rnd ir |> splitAll 4
 
@@ -219,14 +225,14 @@ tc = [darkGrey, lightGrey, grey,
       red, darkRed, green]
 
 
-tileColor = Dict.fromList (zip tileList tc)
+tileColor = fromList (map2 (,) tileList tc)
 
 sq : Float -> Form
 sq n = let clr = charcoal
        in filled clr (rect n n)
 
 
-locations : Float -> [(Float, Float)]
+locations : Float -> List (Float, Float)
 locations n = let
                 l = n / 2
                 l2 = n + l
@@ -237,19 +243,19 @@ locations n = let
 numberStyle = {defaultStyle | bold <- True,
                               height <- Just 36}
 
-sqArray : [((Float,Float),Tile)] -> Float -> [Form]
+sqArray : List ((Float,Float),Tile) -> Float -> List Form
 sqArray s size =
         let
-           color x = (Dict.getOrElse darkGrey (tileStr (snd x)) tileColor)
+           color x = (withDefault darkGrey (get (tileStr (snd x)) tileColor))
            t x = let
                     n = (tileNum (snd x))
                  in
-                    toForm (centered (style numberStyle (toText (if n > 0 then (show n) else ""))))
+                    toForm (centered (style numberStyle (fromString (if n > 0 then (toString n) else ""))))
            len = round size
         in
            map (\x -> move (fst x) (toForm (collage len len [(filled (color x) (square size)), (t x)]))) s
 
-grid : Float -> [[Tile]] -> Element
+grid : Float -> List (List Tile) -> Element
 grid n rows =
      let
          l = n / 2
@@ -258,7 +264,7 @@ grid n rows =
          locs = locations s
      in
          collage c c
-         ([ sq n ] ++ (sqArray (zip locs (flatten rows)) (s - 10)))
+         ([ sq n ] ++ (sqArray (map2 (,) locs (flatten rows)) (s - 10)))
 
 ------------------------------------------------------------------------------------
 -- test code follows
