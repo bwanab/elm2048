@@ -7,12 +7,13 @@ import Keyboard
 import Window
 import Random
 import Time(..)
+import Random (Seed, float, generate, initialSeed)
 
 type alias V = {x : Float, y : Float , z : Float}
-type alias State = {position : V, speed : V, accel : V}
+type alias State = {position : V, speed : V, accel : V, seed: Seed}
 
 m : State
-m = {position = {x = 0, y = 0, z = 0}, speed = {x = 0, y = 0, z = 0}, accel = {x = 0, y = 0, z = 0}}
+m = {position = {x = 0, y = 0, z = 0}, speed = {x = 0, y = 0, z = 0}, accel = {x = 0, y = 0, z = 0}, seed = initialSeed 17890714}
 
 addV : V -> V -> V
 addV v1 v2 = {x = v1.x + v2.x, y = v1.y + v2.y, z = v1.z + v2.z }
@@ -33,12 +34,12 @@ update (t, {x,y}, forward, brake) state =
         newAccel = {x = toFloat x, y = toFloat y, z = newForward + newBrake}
         newSpeed = addV newAccel state.speed
         tPosition = addV state.position newSpeed
-        rand = 100
+        (rand, newSeed) = generate (float 0 1) state.seed
         tB = testBuffet rand
         newPosition = {tPosition | x <- if tB then addBuffeting tPosition.x rand newSpeed.z else tPosition.x,
                                    y <- if not tB then addBuffeting tPosition.y rand newSpeed.z else tPosition.y }
    in
-        {state | speed <- newSpeed, position <- newPosition, accel <- newAccel }
+        {state | speed <- newSpeed, position <- newPosition, accel <- newAccel, seed <- newSeed }
 
 format1 : String -> Float -> String
 format1 s v = s ++ ": " ++ toString (round v) ++ " "
