@@ -8,10 +8,11 @@ import Window
 import Random
 import Time(..)
 import Random (Seed, float, generate, initialSeed)
+import Number.Format (pretty)
 
 type alias V = {x : Float, y : Float , z : Float}
 type alias F = {x : Float, y : Float , w : Float, h : Float}
-type alias State = {position : V, speed : V, accel : V, seed: Seed, frame: F}
+type alias State = {position : V, speed : V, accel : V, seed: Seed, frame: F, time: Time}
 
 m : State
 m = {
@@ -19,7 +20,8 @@ m = {
   speed = {x = 0, y = 0, z = 0},
   accel = {x = 0, y = 0, z = 0},
   seed = initialSeed 17890714,
-  frame = {x = 0, y = 0, w = 200, h = 200}}
+  frame = {x = 0, y = 0, w = 200, h = 200},
+  time = 0.0}
 
 addV : V -> V -> V
 addV v1 v2 = {x = v1.x + v2.x, y = v1.y + v2.y, z = v1.z + v2.z }
@@ -57,7 +59,7 @@ update (t, {x,y}, forward, brake) state =
                                    y <- if not tB then addBuffeting tPosition.y rand newSpeed.z else tPosition.y,
                                    z <- if testInFrame tPosition m.frame then tPosition.z else state.position.z }
    in
-        {state | speed <- newSpeed, position <- newPosition, accel <- newAccel, seed <- newSeed }
+        {state | speed <- newSpeed, position <- newPosition, accel <- newAccel, seed <- newSeed, time <- t }
 
 format1 : String -> Float -> String
 format1 s v = s ++ ": " ++ toString (round v) ++ " "
@@ -74,6 +76,15 @@ showV label v =
     in
           collage 200 50 [g]
 
+showTime : String -> Time -> Element
+showTime label t =
+    let
+        g = group [rect 200 50 |> filled lightGrey,
+                   toForm (flow down [plainText label,
+                                      pretty 2 ',' t |> fromString |> rightAligned])]
+    in
+          collage 200 50 [g]
+
 display : Int -> Int -> State -> Element
 display w h m = collage w h [ rect (toFloat w) (toFloat h) |> filled lightGrey,
                               rect m.frame.w m.frame.h |> filled lightBlue |> move (m.frame.x, m.frame.y),
@@ -83,11 +94,12 @@ display w h m = collage w h [ rect (toFloat w) (toFloat h) |> filled lightGrey,
 render : (Int, Int) -> State -> Element
 render (w,h) m = container w h middle (flow down [flow right [showV "Position" m.position,
                                                               showV "Speed" m.speed,
-                                                              showV "Accel" m.accel],
+                                                              showV "Accel" m.accel,
+                                                              showTime "Time" m.time],
                                                  display w (h - 50) m])
 input =
   map4 (,,,)
-        (foldp (\t acc -> acc + (t/100)) 0 (fps 24))
+        (foldp (\t acc -> acc + (t/1000)) 0 (fps 24))
         Keyboard.arrows
         Keyboard.space
         Keyboard.ctrl
