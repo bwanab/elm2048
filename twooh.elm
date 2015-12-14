@@ -4,13 +4,13 @@ import Window
 import Keyboard
 import Time
 import Graphics.Input.Field as Field
-import Graphics.Input (dropDown)
-import Graphics.Collage (group,rect,filled,toForm,collage)
-import Graphics.Element (..)
-import Tiles (..)
-import Signal (Signal(..),map, map2,map4,merge,(<~),(~),foldp )
-import Color (lightGrey,red)
-import Text (plainText, fromString, rightAligned, defaultStyle, style, centered)
+import Graphics.Input exposing (dropDown)
+import Graphics.Collage exposing (group,rect,filled,toForm,collage)
+import Graphics.Element exposing (..)
+import Tiles exposing (..)
+import Signal exposing (Signal(..),map, map2,map4,merge,foldp )
+import Color exposing (lightGrey,red)
+import Text exposing (fromString, defaultStyle, style)
 
 ------------------------------------------------------------------------------------
 -- frp specific code
@@ -37,19 +37,11 @@ type alias TimeInput = (Time.Time, Input)
 
 --port reset : Signal Bool
 
-userInput : Signal TimeInput
-userInput = Time.timestamp <| Input <~ map .x Keyboard.arrows
-                                     ~ map .y Keyboard.arrows
---                                     ~ merge Keyboard.space reset
-                                     ~ Keyboard.space
-                                     ~ Time.every Time.minute
---                                     ~ difficulty.signal
-
--- userInput = Time.timestamp <| Input <~ map4 (,,,) (.x Keyboard.arrows)
---                                              (.y Keyboard.arrows)
---                                              Keyboard.space
---                                              (Time.every Time.second)
---                                      -- ~ difficulty.signal
+userInput = Time.timestamp <| map4 Input (Signal.map .x Keyboard.arrows)
+                                         (Signal.map .y Keyboard.arrows)
+                                         Keyboard.space
+                                         (Time.every Time.second)
+                                     -- ~ difficulty.signal
 
 defaultGame : GameState
 defaultGame = {rows = initialRows 3, score = 0, countdown = 20000, currentcount = 0}
@@ -59,13 +51,13 @@ newGame rnd = {rows = initialRows rnd, score = 0, countdown = 20000, currentcoun
 
 setState : Int -> Int -> Int -> GameState -> GameState
 setState x y rv r =
-       if | x == 1 -> swipeAndAdd RightToLeft r rv
-          | x == -1 -> swipeAndAdd LeftToRight r rv
-          | y == 1 -> swipeAndAdd TopToBottom r rv
-          | y == -1 -> swipeAndAdd BottomToTop r rv
-          | otherwise -> if r.currentcount <= 0
-                         then swipeAndAdd NoSwipe r rv
-                         else {r | currentcount <- r.currentcount - 1} --,
+       if x == 1 then swipeAndAdd RightToLeft r rv
+           else if x == -1 then swipeAndAdd LeftToRight r rv
+               else if y == 1 then swipeAndAdd TopToBottom r rv
+                   else if y == -1 then swipeAndAdd BottomToTop r rv
+                       else if r.currentcount <= 0
+                            then swipeAndAdd NoSwipe r rv
+                            else {r | currentcount = r.currentcount - 1} --,
 --                                   countdown <- diff }
 
 gameOver : GameState -> Bool
@@ -89,7 +81,7 @@ showVal : String -> Int -> Element
 showVal label score =
     let
         g = group [rect 100 50 |> filled lightGrey,
-                   toForm (flow down [plainText label,
+                   toForm (flow down [fromString label |> centered,
                                       toString score |> fromString |> rightAligned])]
     in
         collage 100 50 [g]
@@ -100,9 +92,9 @@ showScore score = showVal "Score" score
 showCountdown : Int -> Element
 showCountdown count = showVal "Countdown" count
 
-gameOverStyle = {defaultStyle | bold <- True,
-                                height <- Just 24,
-                                color <- red }
+gameOverStyle = {defaultStyle | bold = True,
+                                height = Just 24,
+                                color = red }
 
 display : (Int, Int) -> GameState -> Element
 display (w,h) gs = container w h middle (flow down [ flow right [if gs.countdown < 100 then showCountdown gs.currentcount
@@ -113,5 +105,5 @@ display (w,h) gs = container w h middle (flow down [ flow right [if gs.countdown
                                                                  showScore gs.score],
                                                      (grid 400 gs.rows),
                                                      if gameOver gs then fromString "Game Over" |> style gameOverStyle  |> centered
-                                                                    else plainText "" ])
+                                                                    else fromString "" |> centered ])
 gameState = foldp stepGame defaultGame userInput

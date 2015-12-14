@@ -2,13 +2,13 @@ module Tiles where
 import Window
 import Keyboard
 import Time
-import Dict (fromList, get)
-import Maybe ( Maybe(..), withDefault)
-import List (map, take, (::), drop, head, length, filter, map2, concat, foldr, tail, reverse, repeat, sort)
-import Color (darkGrey, lightGrey, grey, lightYellow, darkYellow, lightOrange, orange, darkOrange, lightRed, red, darkRed, green, charcoal)
-import Graphics.Collage (filled, rect, Form, toForm, move, collage, square)
-import Graphics.Element(..)
-import Text (centered, style, fromString, defaultStyle)
+import Dict exposing (fromList, get)
+import Maybe exposing ( Maybe(..), withDefault)
+import List exposing (map, take, (::), drop, head, length, filter, map2, concat, foldr, tail, reverse, repeat, sort)
+import Color exposing (darkGrey, lightGrey, grey, lightYellow, darkYellow, lightOrange, orange, darkOrange, lightRed, red, darkRed, green, charcoal)
+import Graphics.Collage exposing (filled, rect, Form, toForm, move, collage, square)
+import Graphics.Element exposing (..)
+import Text exposing (style, fromString, defaultStyle)
 
 -----------------------------------------------------------------------------------------
 -- these functions are generic functionality
@@ -16,12 +16,12 @@ import Text (centered, style, fromString, defaultStyle)
 
 -- splits a list into groups of n size
 splitAll : Int -> List a -> List (List a)
-splitAll n x = if | x == [] -> []
-                  | otherwise -> (take n x) :: (splitAll 4 (drop n x))
+splitAll n x = if x == [] then []
+               else (take n x) :: (splitAll 4 (drop n x))
 
 -- transpose a matrix
-transpose : List (List a) -> List (List a)
-transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..((length (head r)) - 1)]
+transpose : List (List a) -> List (List (Maybe a))
+transpose r = map (\n -> map (\row -> head (drop n row)) r ) [0..((length (withDefault [] (head r))) - 1)]
 
 -- returns a list of indices to items in list that equal val
 elemIndices : a -> List a -> List Int
@@ -37,12 +37,12 @@ flatten rows = foldr (++) [] rows
 
 -- iterate - for a function f on val a with list l invokes f(a,x1) then f(f(a,x2),... for each element xn of l
 -- this is different from haskell's iterate since elm isn't lazy.
-iterate : (a -> b -> a) -> a -> List b -> List a
-iterate f a l = if | l == [] -> []
-                   | otherwise -> let
-                                      v = (f a (head l))
-                                  in
-                                      v :: (iterate f v (tail l))
+-- iterate : (a -> b -> a) -> a -> List b -> List a
+-- iterate f a l = if l == [] then []
+--                 else let
+--                         v = (f a (head l))
+--                      in
+--                         v :: (iterate f v (withDefault [] (tail l)))
 -----------------------------------------------------------------------------------------
 -- the non-frp part of the 2048 engine
 -----------------------------------------------------------------------------------------
@@ -81,6 +81,7 @@ numTile t = case t of
                  512 -> T512
                  1024 -> T1024
                  2048 -> T2048
+                 _ -> Empty
 
 tileStr : Tile -> String
 tileStr t = toString (tileNum t)
@@ -104,8 +105,8 @@ tiles : Tile -> List Tile
 tiles t = let
             n = tileSucc t
           in
-            if | n == Empty -> [t]
-               | otherwise -> t :: (tiles n)
+            if n == Empty then [t]
+            else t :: (tiles n)
 
 
 
@@ -126,12 +127,12 @@ type Rotation = TLeft | TRight | Flip
 
 
 rotate : Rotation -> List (List Tile) -> List (List Tile)
-rotate r rows = if | r == TLeft ->  map (\row -> reverse row) (transpose rows)
-                   | r == TRight -> reverse (transpose rows)
-                   | r == Flip -> map (\row -> reverse row) rows
+rotate r rows = if r == TLeft then  map (\row -> reverse (map (\r -> withDefault Empty r) row)) (transpose rows)
+                else if r == TRight then reverse (map (\row -> (map (\r -> withDefault Empty r) row)) (transpose rows))
+                     else map (\row -> reverse row) rows
 
 rotateGame : Rotation -> GameState -> GameState
-rotateGame r gs = {gs | rows <- (rotate r gs.rows) }
+rotateGame r gs = {gs | rows = (rotate r gs.rows) }
 
 -- look at an element x and row so far.
 -- If row is empty then just put x on result
@@ -140,16 +141,16 @@ rotateGame r gs = {gs | rows <- (rotate r gs.rows) }
 --                                     otherwise, add x to the existing row.
 evalTile : Tile -> List Tile -> List Tile
 evalTile x row =
-   if | row == [] -> [x]
-      | x == Empty -> tail row
-      | otherwise ->
+   if row == [] then [x]
+   else if x == Empty then withDefault [] (tail row)
+        else
           let
-             y = head row
-             ys = tail row
+             y = withDefault Empty (head row)
+             ys = withDefault [] (tail row)
           in
-             if | x == y -> tileSucc x :: Empty :: ys
-                | y == Empty -> ys
-                | otherwise -> x::row
+             if x == y then tileSucc x :: Empty :: ys
+                else if y == Empty then ys
+                     else x::row
 
 swipeRow : List Tile -> List Tile
 swipeRow tiles =
@@ -170,24 +171,24 @@ computeRow new old =
    let
        h = sortTiles old |> reverse |> head
    in
-       foldr addTiles 0 (filter (\n -> (tileNum n) > (tileNum h)) new)
+       foldr addTiles 0 (filter (\n -> (tileNum n) > (tileNum (withDefault Empty h))) new)
 
 type SwipeDirection = RightToLeft | TopToBottom | BottomToTop | LeftToRight | NoSwipe
 
 swipe : SwipeDirection -> GameState -> GameState
 swipe dir gs =
-        if | dir == BottomToTop -> rotateGame TRight gs |> swipe RightToLeft |> rotateGame TLeft
-           | dir == LeftToRight -> rotateGame Flip gs |> swipe RightToLeft |> rotateGame Flip
-           | dir == TopToBottom -> rotateGame TLeft gs |> swipe RightToLeft |> rotateGame TRight
-           | dir == RightToLeft ->
-                 let
-                     x = map swipeRow gs.rows
-                 in
-                     let
-                        earned = map2 (,) x gs.rows |> map (\(n,o) -> computeRow n o) |> foldr (+) 0
-                     in
-                        {gs | rows <- x,
-                              score <- gs.score + earned }
+        if dir == BottomToTop then rotateGame TRight gs |> swipe RightToLeft |> rotateGame TLeft
+        else if dir == LeftToRight then rotateGame Flip gs |> swipe RightToLeft |> rotateGame Flip
+             else if dir == TopToBottom then rotateGame TLeft gs |> swipe RightToLeft |> rotateGame TRight
+                  else
+                      let
+                          x = map swipeRow gs.rows
+                      in
+                        let
+                            earned = map2 (,) x gs.rows |> map (\(n,o) -> computeRow n o) |> foldr (+) 0
+                        in
+                          {gs | rows = x,
+                                       score = gs.score + earned }
 
 swipeAndAdd : SwipeDirection -> GameState -> Int -> GameState
 swipeAndAdd dir gs rv =
@@ -195,15 +196,15 @@ swipeAndAdd dir gs rv =
        r = if dir == NoSwipe then gs else swipe dir gs
     in
        if ((r == gs) && (dir /= NoSwipe)) || (numEmpty (flatten r.rows) == 0)
-          then {gs | currentcount <- gs.countdown + 1}
+          then {gs | currentcount = gs.countdown + 1}
           else let
                   l = flatten r.rows
                   re = replaceOneEmpty rv l
                in
-                  {r | rows <- splitAll 4 re, currentcount <- r.countdown + 1}
+                  {r | rows = splitAll 4 re, currentcount = r.countdown + 1}
 
 getEmptyIndex : Int -> List Tile -> Int
-getEmptyIndex n l = elemIndices Empty l |> drop n |> head
+getEmptyIndex n l = elemIndices Empty l |> drop n |> head |> withDefault 0
 
 replaceOneEmpty : Int -> List Tile -> List Tile
 replaceOneEmpty rv l =
@@ -240,8 +241,8 @@ locations n = let
             in
                 permutations (reverse s) s
 
-numberStyle = {defaultStyle | bold <- True,
-                              height <- Just 36}
+numberStyle = {defaultStyle | bold = True,
+                              height = Just 36}
 
 sqArray : List ((Float,Float),Tile) -> Float -> List Form
 sqArray s size =

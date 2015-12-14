@@ -1,4 +1,5 @@
-import Tiles (..)
+import Tiles (swipe2)
+import List (map)
 
 ------------------------------------------------------------------------------------
 -- test code follows
@@ -23,7 +24,7 @@ r = [
      [T2, T2, T2, T2]]
 
 
-t : [[Tile]] -> [[Tile]]
+t : List (List Tile) -> List (List Tile)
 t x = map swipe2 x
 
 main = t r
