@@ -1,7 +1,7 @@
 import Window
 import Keyboard
 import Time
-import Tiles (..)
+import Tiles exposing (..)
 
 ------------------------------------------------------------------------------------
 -- frp specific code
